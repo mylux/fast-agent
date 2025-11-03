@@ -395,7 +395,9 @@ class FastAgentLLM(ContextDependent, FastAgentLLMProtocol, Generic[MessageParamT
         # Ensure model_dump only includes set fields if that's the desired behavior,
         # or adjust exclude_unset=True/False as needed.
         # Default Pydantic v2 model_dump is exclude_unset=False
-        params_dict = request_params.model_dump(exclude=final_exclude_fields)
+        params_dict = self._customize_params(
+            request_params.model_dump(exclude=final_exclude_fields)
+        )
 
         for key, value in params_dict.items():
             # Only add if not None and not already in base_args (base_args take precedence)
@@ -412,6 +414,9 @@ class FastAgentLLM(ContextDependent, FastAgentLLMProtocol, Generic[MessageParamT
             arguments.update(request_params.metadata)
 
         return arguments
+
+    def _customize_params(self, params: dict[str, Any]) -> dict[str, Any]:
+        return params
 
     def _merge_request_params(
         self, default_params: RequestParams, provided_params: RequestParams
