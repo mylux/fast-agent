@@ -2,6 +2,7 @@ from typing import List
 
 from fast_agent.llm.fastagent_llm import FastAgentLLM
 from fast_agent.llm.provider.anthropic.llm_anthropic import AnthropicLLM
+from fast_agent.llm.provider.openai.llm_generic import GenericLLM
 from fast_agent.llm.provider.openai.llm_openai import OpenAILLM
 from fast_agent.llm.provider_types import Provider
 from fast_agent.llm.request_params import RequestParams
@@ -125,6 +126,43 @@ class TestRequestParamsInLLM:
         assert result["max_tokens"] == 1000  # From base_args
         assert result["temperature"] == 0.7  # From params
         assert result["response_format"] == {"type": "json_object"}  # From params
+        assert result["seed"] == 42  # From metadata
+        assert "maxTokens" not in result  # Should be excluded
+        assert "systemPrompt" not in result  # Should be excluded
+        assert "use_history" not in result  # Should be excluded
+        assert "max_iterations" not in result  # Should be excluded
+        assert "parallel_tool_calls" not in result  # Should be excluded
+
+    def test_generic_provider_arguments(self):
+        """Test prepare_provider_arguments with OpenAI provider"""
+        # Create an OpenAI LLM instance without initializing provider connections
+        llm = GenericLLM()
+
+        # Basic setup
+        base_args = {"model": "gpt-4.1", "messages": [], "max_tokens": 1000}
+
+        # Create params with regular fields, metadata, and response_format
+        params = RequestParams(
+            model="generic.something",
+            temperature=0.7,
+            maxTokens=2000,  # This should be excluded and not conflict with max_tokens
+            systemPrompt="You are a helpful assistant",  # This should be excluded
+            response_format={"type": "json_object"},  # This should be renamed
+            use_history=True,  # This should be excluded
+            max_iterations=5,  # This should be excluded
+            parallel_tool_calls=True,  # This should be excluded
+            metadata={"seed": 42},
+        )
+
+        # Prepare arguments with OpenAI-specific exclusions
+        result = llm.prepare_provider_arguments(base_args, params, llm.OPENAI_EXCLUDE_FIELDS)
+
+        # Verify results
+        assert result["model"] == "gpt-4.1"  # From base_args
+        assert result["max_tokens"] == 1000  # From base_args
+        assert result["temperature"] == 0.7  # From params
+        assert "response_format" not in result  # This should be renamed to "format"
+        assert result["format"] == {"type": "json_object"}  # Renamed From params
         assert result["seed"] == 42  # From metadata
         assert "maxTokens" not in result  # Should be excluded
         assert "systemPrompt" not in result  # Should be excluded
