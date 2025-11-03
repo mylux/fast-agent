@@ -1,4 +1,5 @@
 import os
+from typing import Any
 
 from fast_agent.llm.provider.openai.llm_openai import OpenAILLM
 from fast_agent.llm.provider_types import Provider
@@ -33,3 +34,11 @@ class GenericLLM(OpenAILLM):
             base_url = self.context.config.generic.base_url
 
         return base_url
+
+    def _customize_params(self, params: dict[str, Any]) -> dict[str, Any]:
+        p = dict(params)
+        rf = p.get("response_format")
+        if rf:
+            p["format"] = rf
+            del p["response_format"]
+        return p
